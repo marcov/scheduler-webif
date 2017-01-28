@@ -1,0 +1,172 @@
+extends layout
+
+block content
+ 
+  div(class="pure-g")
+    div(class="pure-u-1-2 boxed")
+      h1()= title
+      p Welcome to #{title}
+
+  div(class="pure-g pure-u-1-1")
+    table(class="pure-table pure-table-bordered")
+      thead
+        tr
+          th="Id"
+          th="Attivo"
+          th="Durata"
+          th="Tipo"
+          th="Data"
+          th="Ora"
+          th="Azione"
+
+      tbody
+      each item in rows
+        form(class="pure-form", method="post" action="/updateEntry")
+          tr
+            td=item.id
+            td
+              input(name="active", type="checkbox", checked=(item.active != 0))
+            td=item.duration
+            
+            case item.recurrent
+              when 0
+                td Data Singola
+                td.
+                  #{item.rule.day}/#{item.rule.month + 1}/#{item.rule.year}
+              when 1
+                td Ricorrente
+                if item.rule.alldays == "1"
+                  td.
+                    Tutti i Giorni
+                else
+                    case item.rule.day
+                      when "0"
+                        td="Lunedi'"
+                      when "1"
+                        td="Martedi'"
+                      when "2"
+                        td="Mercoledi'"
+                      when "3"
+                        td="Giovedi'"
+                      when "4"
+                        td="Venerdi'"
+                      when "5"
+                        td="Sabato"
+                      when "6"
+                        td="Domenica"
+                      default
+                        td.
+                          Error: #{item.rule.day}
+              default
+                td="Error"
+                td="Error"
+            td.
+              #{item.rule.hour}:#{item.rule.minute}
+            td
+                button(class="pure-button pure-button-primary" 
+                       type="submit" 
+                       name="data"
+                       value={id : (item.id), action : "update"})="Aggiorna"
+                button(class="pure-button pure-button-primary" 
+                       type="submit" 
+                       name="data"
+                       value={id : (item.id), action : "delete"}
+                       style="margin-left:1em;")="Elimina"
+
+  div(style="height: 3em;")
+    p Status: #{postStatus}
+
+  // single type rule
+  div(class="pure-g pure-u-1-1")
+    form(class="pure-form pure-form-aligned" method="get" action="/startJobs")
+      button(class="pure-button pure-button-primary" 
+             type="submit" 
+             style="margin-left:1em;")="Start Jobs"
+    
+  div(style="height: 3em;")
+    
+  // single type rule
+  div(class="pure-g pure-u-1-1")
+    form(class="pure-form pure-form-aligned" method="post" action="/addEntry")
+      input(type="hidden" name="recurrent" value="0")
+      fieldset(class="newschedule")
+        legend()="Programma data/ora singola"
+        
+        div(class="pure-control-group")
+          label()="Durata"
+          input(
+                type="text"
+                name="duration"
+                placeholder="Durata")
+        
+        div(class="pure-control-group")
+          label()="Data e Ora"
+          input(type="date"
+                name="date"
+                placeholder="2017-01-01")
+          input(type="time"
+                name="time"
+                placeholder="12:00")
+                
+        div(class="pure-control-group")
+          label()="Attiva"
+          input(id="active", name="active", type="checkbox")
+        
+        div(class="pure-controls")
+          button(class="pure-button pure-button-primary"
+                 type="submit"
+                 name="action"
+                 value="add")="Aggiungi"
+    
+    div(style="height: 3em;")
+    
+    // recurrent type rule
+    form(class="pure-form pure-form-aligned" method="post" action="/addEntry")
+      input(type="hidden" name="recurrent" value="1")
+      fieldset(class="newschedule")
+        legend()="Programma ricorrente"
+
+        div(class="pure-control-group")
+          label()="Durata"
+          input(
+          type="text"
+          name="duration"
+          placeholder="Durata")
+
+        div(class="pure-control-group")
+          label()="Ora"
+          input(type="time"
+          name="time"
+          placeholder="12:00")
+
+        div(class="pure-control-group")
+          label()="Quando"
+          input(type="radio" name="alldays" value="1")
+          =" Tutti i giorni"
+          
+        div(class="pure-control-group")
+          label()=""
+          input(type="radio" name="alldays" value="0")
+          =" Un giorno alla settimana"
+
+          select(name="day")
+            option(value="0")="Lunedi'"
+            option(value="1")="Martedi'"
+            option(value="2")="Mercoledi'"
+            option(value="3")="Giovedi'"
+            option(value="4")="Venerdi'"
+            option(value="5")="Sabato"
+            option(value="6")="Domenica"
+        
+        div(class="pure-control-group")
+          label()="Attiva"
+          input(id="active", name="active", type="checkbox")
+          
+        
+        div(class="pure-controls")
+          button(class="pure-button pure-button-primary"
+          type="submit"
+          name="action"
+          value="add")="Aggiungi"
+          
+
