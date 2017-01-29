@@ -32,13 +32,10 @@ router.get('/', function (req, res, next) {
 
 /* GET start jobs. */
 router.get('/startJobs', function (req, res, next) {
-  
-  db.getSchedules((data) => {
+  db.getSchedules({httpres: res}, (err, data) => {
     sk.scheduleAllJobs(data.rows);
     data.httpres.send("All is good!");
-  },
-  {httpres: res});
-  
+  });
 });
 
 

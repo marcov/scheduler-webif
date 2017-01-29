@@ -1,4 +1,5 @@
 var schedule = require('node-schedule');
+var child_process = require('child_process');
 
 var allJobs = [];
 
@@ -66,6 +67,9 @@ exports.startRecurrent = (id, callback, callBackData, rule) => {
 function genericJobCallBack(cbData) {
   console.log("JOB HAS FIRED!!!!!!!");
   console.log(cbData);
+  child_process.spawn("ping",
+        ["-c", cbData.duration, "epfl.ch"],
+        { detached: true }); 
 }
 
 
