@@ -1,17 +1,34 @@
 var sqlite3 = require('sqlite3').verbose();
 var db = null;
+const fs = require('fs');
 
-const db_in_memory = Boolean(false);
-const db_file_name = 'database.db';
+const allowDbCreate = Boolean(true);
+const dbInMemory = Boolean(false);
+const sqliteDb = 'database.sdb';
+const sqliteSchema = 'database.sql';
 const schedulesTable = "schedules";
 
-exports.populate = () =>
-{
-    console.log("TODO");
+exports.createDb = () => {
+  try {
+    var schemaQuery = fs.readFileSync(sqliteSchema, 'utf8');
+  } catch (e) {
+    abortWhenFail(e);
+  }
+
+  //console.log(schemaQuery);
+
+  db.exec(schemaQuery, abortWhenFail);
 }
 
-exports.insertSchedule = (insertData, cb) =>
-{
+
+function abortWhenFail(err) {
+  if (!err) return;
+ 
+  console.log(err);
+  process.exit(-1);
+}
+
+exports.insertSchedule = (insertData, cb) => {
   console.log("will insert this: ");
   console.log(insertData);
 
@@ -22,57 +39,68 @@ exports.insertSchedule = (insertData, cb) =>
            insertData.active,
           insertData.recurrent,
            insertData.rule], 
-          function(err) {
-            cb(err); 
-  });
+          (err) => {
+            cb(err);
+            if (err) abortWhenFail(err);
+          });
 }
 
-exports.deleteSchedule = (id, cb) =>
-{
+exports.deleteSchedule = (id, cb) => {
   // As an array.
   db.run("DELETE FROM " + schedulesTable + " " +
-         "WHERE id = ?", [id], 
-         function(err) {
-          cb(err); 
-  });
+         "WHERE id = ?", [id],
+          (err) => {
+            cb(err);
+            if (err) abortWhenFail(err);
+          });
 }
 
-exports.updateSchedule = (id, active, cb) =>
-{
+exports.updateSchedule = (id, active, cb) => {
   // As an array.
   db.run("UPDATE " + schedulesTable + " SET active = ? WHERE id = ?", [active, id], 
-         function(err) {
-    cb(err); 
-  });
+          (err) => {
+            cb(err);
+            if (err) abortWhenFail(err);
+          });
 }
 
-exports.init = () =>
-{
-    if (db_in_memory)
-    {
-        db = new sqlite3.Database(':memory:');
-        populate();
-    }
-    else
-    {
-        console.log("Creating db file: " +  db_file_name);
-        db = new sqlite3.Database(db_file_name, sqlite3.OPEN_READWRITE);
-    }
-
-    //Lets connect to our database using the DB server URL.
-    //mongoose.connect('mongodb://localhost/fiobbio');
-    console.log("DB inited!");
-}
-
-
-exports.getSchedules = (cb, cbData) =>
-{
+exports.getSchedules = (cbData, cb) => {
     console.log("running query...");
     
-    db.all("SELECT * FROM " + schedulesTable + "", function(err, rows) {
+    db.all("SELECT * FROM " + schedulesTable + "", (err, rows) => {
       cbData.rows = rows;
-      cbData.err  = err;
-      cb(cbData); 
+      cb(err, cbData); 
+      if (err) abortWhenFail(err);
     });
+}
+
+
+exports.init = () => {
+  var create = Boolean(false);
+
+  create = dbInMemory;
+ 
+  if (!create) {
+    try {
+      fs.statSync(sqliteDb);
+    } catch (e) {
+      //console.log(e);
+      create = allowDbCreate;
+    }
+  }
+
+  if (!create) {
+    console.log("Opening db file: " +  sqliteDb);
+    db = new sqlite3.Database(sqliteDb,
+                              sqlite3.OPEN_READWRITE,
+                              abortWhenFail);
+  } else { 
+    db = new sqlite3.Database(dbInMemory ? ':memory:' : sqliteDb);
+      console.log("Creating DB in memory...");
+      this.createDb();
+  }
+
+  //Lets connect to our database using the DB server URL.
+  console.log("DB inited!");
 }
 

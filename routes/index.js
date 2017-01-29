@@ -3,8 +3,14 @@ var router  = express.Router();
 var db      = require('../scheduleDB.js');
 var sk      = require('../scheduling.js');
 
-function renderHomePage(renderData) {
+function renderHomePage(err, renderData) {
   "use strict";
+  var res = renderData.httpres;
+
+  if (err) {
+    res.send("query failed: " + err);
+    return;
+  }
 
   for (var i = 0; i < renderData.rows.length; i++) {
     var row = renderData.rows[i];
@@ -12,54 +18,27 @@ function renderHomePage(renderData) {
     //console.log(row.rule);
   }
  
-  renderData.httpres.render('index',
-                            {title :      "Scheduler WebIF",
-                             rows  :      renderData.rows,
-                             postStatus : renderData.postStatus});
+  res.render('index',
+             {title :      "Scheduler WebIF",
+             rows  :      renderData.rows,
+             postStatus : renderData.postStatus});
 }
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-  db.getSchedules(renderHomePage,
-                  {httpres: res});
+  db.getSchedules({httpres: res}, renderHomePage);
 });
 
-function jobCB() {
-  console.log("JOB HAS FIRED!!!!!!!");
-}
-
-function scheduleAllJobs(renderData) {
-  
-  sk.stopAll();
-  
-  for (var i = 0; i < renderData.rows.length; i++) {
-    var row = renderData.rows[i];
-    row.rule = JSON.parse(row.rule);
-    
-    if (row.active != 1)
-    {
-      console.log("ID " + row.id + " is not active, skipping...");
-      continue;
-    }
-    
-    if (row.recurrent === 0)
-    {
-      sk.startSingle(row.id, jobCB, row.rule);
-    }
-    else {
-      sk.startRecurrent(row.id, jobCB, row.rule);
-    }
-
-  }
-  
-  renderData.httpres.send("All is good!");
-}
 
 /* GET start jobs. */
 router.get('/startJobs', function (req, res, next) {
   
-  db.getSchedules(scheduleAllJobs,
-                  {httpres: res});
+  db.getSchedules((data) => {
+    sk.scheduleAllJobs(data.rows);
+    data.httpres.send("All is good!");
+  },
+  {httpres: res});
+  
 });
 
 
@@ -103,17 +82,14 @@ router.post('/addEntry', function (req, res, next) {
      active    : (req.body.active === "on") ? 1 : 0,
      recurrent : req.body.recurrent,
      rule      : rule},
-    function (err) {
-    
+    (err) => {
       if (err !== null) {
         res.send("query failed: " + err);
         return;
       }
     
-      db.getSchedules(renderHomePage,
-                      {httpres: res, postStatus : 1});
-    }
-  );
+      db.getSchedules({httpres: res, postStatus : 1}, renderHomePage);
+    });
 });
 
 
@@ -123,14 +99,12 @@ router.post('/updateEntry', function (req, res, next) {
   var data = JSON.parse(req.body.data);
   
   var updateCompleted = (err) => {
-    if (err != null)
-    {
+    if (err != null) {
       httpres.send("query failed: " + err);
       return;
     }
 
-    db.getSchedules(renderHomePage,
-                    {httpres: res, postStatus : 1});
+    db.getSchedules({httpres: res, postStatus : 1}, renderHomePage);
   };
   
   if (data.action == "update") {    
