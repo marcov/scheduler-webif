@@ -65,11 +65,11 @@ exports.startRecurrent = (id, callback, callBackData, rule) => {
 }
 
 function genericJobCallBack(cbData) {
-  console.log("JOB HAS FIRED!!!!!!!");
+  console.log("JOB id=" + cbData.id + " HAS FIRED!!!!!!!");
   console.log(cbData);
-  child_process.spawn("ping",
-        ["-c", cbData.duration, "epfl.ch"],
-        { detached: true }); 
+  child_process.spawn("./jobcommand.sh", [cbData.duration],
+                      {detached: true,
+                       stdio : 'inherit'});
 }
 
 
